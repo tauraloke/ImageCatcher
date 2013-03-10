@@ -1,0 +1,83 @@
+#!/usr/bin/php -q
+<?php
+
+/**
+ * пхп-бидуросервер на сокете. Функционал ограничен. Не предназначен для открытого веба.
+ * Глобальные переменные:
+ * $_GET - как обычно, get-параметры. Парсинг get-параметров - в parse_get_params()
+ * $_POST - не поддерживается. Пока.
+ * $_SERVER - представьте себе cli-вариант для этого массива.
+ * $query_string - строка вида /path/to/que.ry?get1=val1&get2&get3=val3
+ * $query_filename - строка вида /path/to/que.ry
+ * $header_options - массив, который пойдёт в HTTP-заголовок
+ * $body - тело выдаваемой страницы.
+ */
+
+require_once('settings.php');
+
+$socket = @stream_socket_server("tcp://".HTTP_ADDRESS.":".HTTP_PORT, $errno, $errstr) OR die("$errstr ($errno)\n");
+
+while ($conn = stream_socket_accept($socket)) {
+	$client_request = "";
+
+	// read only headers
+    while( !preg_match('/\r?\n\r?\n/', $client_request) )  {
+		$client_request .= fread($conn, 1024);
+	}
+
+	if (!$client_request) {
+		trigger_error("Client request is empty!");
+	}
+	
+	process_http_request($conn, $client_request);
+
+  }
+fclose($socket);
+
+
+function parse_get_params($client_request) {
+	global $query_string, $query_filename;
+	
+	preg_match("#GET\s(.*?)\sHTTP#", $client_request, $query_string);
+	$query_string = @$query_string[1];
+	
+	$parts = split("\?", $query_string);
+	if(!empty($parts[1])) {
+		$particles = split("\&", $parts[1]);
+		foreach($particles as $particle) {
+			$word = split('=', $particle);
+			$_GET[$word[0]] = empty($word[1]) ? TRUE : $word[1];
+		}
+	}
+	$query_filename = $parts[0];
+	
+}
+
+function clear_params() {
+	$_GET = array();
+	$_POST = array();
+}
+
+
+function process_http_request($conn, $client_request) {
+	global $header_options, $body, $query_string, $query_filename;
+	$header_options = array();
+	$body = '';
+	
+    $header_options['status'] = 'HTTP/1.1 200 OK';
+	$header_options['content-type'] = 'Content-type: text/plain; charset=UTF-8';
+	$header_options['server-info'] = 'Server: ImageCatcher/'.VERSION;
+
+	
+	parse_get_params($client_request);
+	
+	$body = $query_filename;
+	
+	$headers = join("\r\n", $header_options). "\r\n". "\r\n";
+
+	fwrite($conn, $headers . $body . "\n");
+	
+	clear_params();
+	fclose($conn);
+	
+}
