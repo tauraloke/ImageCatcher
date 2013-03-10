@@ -2,7 +2,7 @@
 <?php
 
 /**
- * пхп-бидуросервер на сокете. Функционал ограничен. Не предназначен для открытого веба.
+ * Демонизированный пхп-бидуросервер на сокете. Функционал ограничен. Не предназначен для открытого веба.
  * Глобальные переменные:
  * $_GET - как обычно, get-параметры. Парсинг get-параметров - в parse_get_params()
  * $_POST - не поддерживается. Пока.
@@ -15,24 +15,55 @@
 
 require_once('settings.php');
 
-$socket = @stream_socket_server("tcp://".HTTP_ADDRESS.":".HTTP_PORT, $errno, $errstr) OR die("$errstr ($errno)\n");
+declare(ticks = 1);
+$stop = FALSE;
 
-while ($conn = stream_socket_accept($socket)) {
-	$client_request = "";
+pcntl_signal(SIGTERM, "sig_handler");
+pcntl_signal(PING, "sig_handler");
+ 
 
-	// read only headers
-    while( !preg_match('/\r?\n\r?\n/', $client_request) )  {
-		$client_request .= fread($conn, 1024);
+$pid = pcntl_fork();
+
+if ($pid == -1) {
+	die('could not fork'.PHP_EOL);
+}
+else if ($pid) {
+	    die('die parent process'.PHP_EOL);
+} 
+else {
+	$socket = @stream_socket_server("tcp://{HTTP_ADDRESS}:{HTTP_PORT}", $errno, $errstr) OR die("$errstr ($errno)\n");
+	while(!$stop) {
+		if($conn = stream_socket_accept($socket)) {
+			process_request($conn);
+		}
 	}
+	fclose($socket);
+}
 
-	if (!$client_request) {
-		trigger_error("Client request is empty!");
+
+posix_setsid();
+
+
+
+// ------------------------------------------ //
+// ---------- now define all functions... ---//
+// -----------------------------------------//
+
+function sig_handler($signo) {
+	global $stop;
+	switch ($signo) {
+		case SIGTERM:
+			echo "Web server is closed.\n";
+			$stop = TRUE;
+			break;
+		case PING:
+			echo "PONG\n";
+			break;
+		default:
+                // to nothing all the days
 	}
-	
-	process_http_request($conn, $client_request);
+}
 
-  }
-fclose($socket);
 
 
 function parse_get_params($client_request) {
@@ -59,8 +90,20 @@ function clear_params() {
 }
 
 
-function process_http_request($conn, $client_request) {
+function process_request($conn) {
 	global $header_options, $body, $query_string, $query_filename;
+	
+	client_request = "";
+
+	// read only headers
+    while( !preg_match('/\r?\n\r?\n/', $client_request) )  {
+		$client_request .= fread($conn, 1024);
+	}
+
+	if (!$client_request) {
+		trigger_error("Client request is empty!");
+	}
+	
 	$header_options = array();
 	$body = '';
 	
