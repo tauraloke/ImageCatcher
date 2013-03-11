@@ -55,7 +55,7 @@ function sig_handler($signo) {
 	global $stop;
 	switch ($signo) {
 		case SIGTERM:
-			echo "Web server is closed.\n";
+			echo "Folder observer is closed.\n";
 			$stop = TRUE;
 			break;
 		default:
