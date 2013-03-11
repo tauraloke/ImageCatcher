@@ -1,0 +1,75 @@
+#!/usr/bin/php -q
+<?php
+ 
+require_once('settings.php');
+
+declare(ticks = 1);
+$stop = FALSE;
+
+pcntl_signal(SIGTERM, "sig_handler");
+
+
+$pid = pcntl_fork();
+
+if ($pid == -1) {
+	die('could not fork'.PHP_EOL);
+}
+else if ($pid) {
+	#die('die parent process'.PHP_EOL);
+	$pf = fopen(VARFILE_PATH . 'file.pid', "w+");
+	fwrite($pf, $pid);
+	fclose($pf);
+	exit;
+}
+else {
+	echo "File catcher started...  [OK] \n";
+	while(!$stop) {
+		sleep(1);
+		if(!file_exists(VARFILE_PATH . 'folder.lock')) {
+			if(!dir_is_empty(PATH.DS.FOLDER4SAVING)) {
+				touch(VARFILE_PATH.'folder.lock');
+				exec('xdg-open http://'.HTTP_ADDRESS.':'.HTTP_PORT.'/add');
+			}
+		}
+	}
+	unlink(VARFILE_PATH . 'file.pid');
+}
+
+
+posix_setsid();
+
+
+
+
+
+
+
+
+// ------------------------------------------ //
+// ---------- now define all functions... ---//
+// -----------------------------------------//
+
+
+
+function sig_handler($signo) {
+	global $stop;
+	switch ($signo) {
+		case SIGTERM:
+			echo "Web server is closed.\n";
+			$stop = TRUE;
+			break;
+		default:
+		case SIGUSR1:
+			echo "PONG\n";
+			break;
+	}
+}
+
+
+
+function dir_is_empty($dir) {
+  if (!is_readable($dir)) return NULL;
+  return (count(scandir($dir)) == 2);
+}
+
+

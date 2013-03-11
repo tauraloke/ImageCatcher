@@ -1,0 +1,44 @@
+#!/usr/bin/php -q
+<?php
+
+/**
+ * управлящий скрипт. Запускаем именно его.
+*/
+
+require_once('settings.php');
+
+if(!$argv) die('Run it in command line!');
+
+if(empty($argv[1])) $argv[1] = 'help';
+
+switch($argv[1]) {
+	case 'start':
+		start_services();
+		break;
+	case 'stop':
+		stop_services();
+		break;
+	case 'restart':
+		stop_services();
+		start_services();
+		break;
+	default:
+	case 'help':
+		echo "Usage: ./".basename(__FILE__)." [start|stop|restart|help]\n";
+		break;
+}
+
+
+function start_services() {
+	echo "Start services... \n";
+	if(file_exists(VARFILE_PATH . 'web.pid')) echo "Web server is already started!\n";
+	else `./catcher_web_d > /dev/null 2>&1 &`;
+}
+
+function stop_services() {
+	echo "Stop services... \n";
+	$pid = @file_get_contents(VARFILE_PATH . 'web.pid');
+	if($pid) { shell_exec("kill {$pid}"); echo "Web server (process #{$pid}) is stopped  [OK]\n"; }
+	else echo "Cant stop web service!\n";
+}
+

@@ -19,8 +19,7 @@ declare(ticks = 1);
 $stop = FALSE;
 
 pcntl_signal(SIGTERM, "sig_handler");
-pcntl_signal(PING, "sig_handler");
- 
+
 
 $pid = pcntl_fork();
 
@@ -28,15 +27,21 @@ if ($pid == -1) {
 	die('could not fork'.PHP_EOL);
 }
 else if ($pid) {
-	    die('die parent process'.PHP_EOL);
-} 
+	#die('die parent process'.PHP_EOL);
+	$pf = fopen(VARFILE_PATH . 'web.pid', "w+");
+	fwrite($pf, $pid);
+	fclose($pf);
+	exit;
+}
 else {
-	$socket = @stream_socket_server("tcp://{HTTP_ADDRESS}:{HTTP_PORT}", $errno, $errstr) OR die("$errstr ($errno)\n");
+	$socket = @stream_socket_server("tcp://".HTTP_ADDRESS.":".HTTP_PORT, $errno, $errstr) OR die("$errstr ($errno)\n");
+	echo "Server started...  [OK] \n";
 	while(!$stop) {
-		if($conn = stream_socket_accept($socket)) {
+		if($conn = @stream_socket_accept($socket)) {
 			process_request($conn);
 		}
 	}
+	unlink(VARFILE_PATH . 'web.pid');
 	fclose($socket);
 }
 
@@ -56,11 +61,10 @@ function sig_handler($signo) {
 			echo "Web server is closed.\n";
 			$stop = TRUE;
 			break;
-		case PING:
+		default:
+		case SIGUSR1:
 			echo "PONG\n";
 			break;
-		default:
-                // to nothing all the days
 	}
 }
 
@@ -93,8 +97,14 @@ function clear_params() {
 function process_request($conn) {
 	global $header_options, $body, $query_string, $query_filename;
 	
-	client_request = "";
+	$header_options = array();
+	$body = '';
+    $header_options['status'] = 'HTTP/1.1 200 OK';
+	$header_options['content-type'] = 'Content-type: text/plain; charset=UTF-8';
+	$header_options['server-info'] = 'Server: ImageCatcher/'.VERSION;
 
+	
+	$client_request = "";
 	// read only headers
     while( !preg_match('/\r?\n\r?\n/', $client_request) )  {
 		$client_request .= fread($conn, 1024);
@@ -104,14 +114,8 @@ function process_request($conn) {
 		trigger_error("Client request is empty!");
 	}
 	
-	$header_options = array();
-	$body = '';
 	
-    $header_options['status'] = 'HTTP/1.1 200 OK';
-	$header_options['content-type'] = 'Content-type: text/plain; charset=UTF-8';
-	$header_options['server-info'] = 'Server: ImageCatcher/'.VERSION;
 
-	
 	parse_get_params($client_request);
 	
 	$body = $query_filename;
