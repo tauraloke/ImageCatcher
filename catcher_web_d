@@ -28,7 +28,7 @@ if ($pid == -1) {
 }
 else if ($pid) {
 	#die('die parent process'.PHP_EOL);
-	$pf = fopen(VARFILE_PATH . 'web.pid', "w+");
+	$pf = fopen(VARS_PATH . 'web.pid', "w+");
 	fwrite($pf, $pid);
 	fclose($pf);
 	exit;
@@ -41,7 +41,7 @@ else {
 			process_request($conn);
 		}
 	}
-	unlink(VARFILE_PATH . 'web.pid');
+	unlink(VARS_PATH . 'web.pid');
 	fclose($socket);
 }
 

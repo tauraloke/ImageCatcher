@@ -31,13 +31,13 @@ switch($argv[1]) {
 
 function start_services() {
 	echo "Start services... \n";
-	if(file_exists(VARFILE_PATH . 'web.pid')) echo "Web server is already started!\n";
+	if(file_exists(VARS_PATH . 'web.pid')) echo "Web server is already started!\n";
 	else `./catcher_web_d > /dev/null 2>&1 &`;
 }
 
 function stop_services() {
 	echo "Stop services... \n";
-	$pid = @file_get_contents(VARFILE_PATH . 'web.pid');
+	$pid = @file_get_contents(VARS_PATH . 'web.pid');
 	if($pid) { shell_exec("kill {$pid}"); echo "Web server (process #{$pid}) is stopped  [OK]\n"; }
 	else echo "Cant stop web service!\n";
 }

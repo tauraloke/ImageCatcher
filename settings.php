@@ -7,6 +7,7 @@ define('VERSION', '0.5');
 
 define('PATH', dirname(__FILE__));
 define('DS', DIRECTORY_SEPARATOR);
-define('FOLDER4SAVING', 'save_file_here');
+define('SAVING_PATH', PATH.DS.'save_file_here');
 
-define('VARFILE_PATH', PATH . DS . 'vars' . DS);
+define('VARS_PATH', PATH . DS . 'vars' . DS);
+define('FILES_PATH', PATH.DS.'files'.DS);

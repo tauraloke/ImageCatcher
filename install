@@ -1,0 +1,14 @@
+#!/usr/bin/php -q
+<?php
+
+/**
+ * Запустите, чтобы установочный скрипт создал недостающие папки.
+*/
+
+require_once('settings.php');
+
+@mkdir(SAVING_PATH);
+@mkdir(VARS_PATH);
+@mkdir(FILES_PATH);
+
+echo "Done.\n";

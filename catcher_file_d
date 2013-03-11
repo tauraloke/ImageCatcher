@@ -16,7 +16,7 @@ if ($pid == -1) {
 }
 else if ($pid) {
 	#die('die parent process'.PHP_EOL);
-	$pf = fopen(VARFILE_PATH . 'file.pid', "w+");
+	$pf = fopen(VARS_PATH . 'file.pid', "w+");
 	fwrite($pf, $pid);
 	fclose($pf);
 	exit;
@@ -25,14 +25,14 @@ else {
 	echo "File catcher started...  [OK] \n";
 	while(!$stop) {
 		sleep(1);
-		if(!file_exists(VARFILE_PATH . 'folder.lock')) {
-			if(!dir_is_empty(PATH.DS.FOLDER4SAVING)) {
-				touch(VARFILE_PATH.'folder.lock');
+		if(!file_exists(VARS_PATH . 'folder.lock')) {
+			if(!dir_is_empty(SAVING_PATH)) {
+				touch(VARS_PATH.'folder.lock');
 				exec('xdg-open http://'.HTTP_ADDRESS.':'.HTTP_PORT.'/add');
 			}
 		}
 	}
-	unlink(VARFILE_PATH . 'file.pid');
+	unlink(VARS_PATH . 'file.pid');
 }
 
 
